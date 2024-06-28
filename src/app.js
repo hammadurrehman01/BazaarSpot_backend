@@ -4,6 +4,10 @@ import cookieParser from "cookie-parser";
 
 const app = express();
 
+app.listen(() => {
+    console.log(`Server is listerning at port 8000`);
+})
+
 app.use(cors({
     origin: process.env.CORS_ORIGIN,
     credentials: true

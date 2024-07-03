@@ -16,7 +16,7 @@ const userSchema = new Schema({
         lowercase: true,
     },
     phone: {
-        type: Numbersss,
+        type: Number,
         required: true,
         unique: true,
         trim: true,
@@ -32,18 +32,19 @@ const userSchema = new Schema({
     { timestamps: true }
 )
 
-userSchema.pre("save", async (next) => {
+
+userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) return next()
 
     this.password = await bcyrpt.hash(this.password, 10);
     next();
 })
 
-userSchema.methods.isPasswordCorrect = async (password) => {
+userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcyrpt.compare(password, this.password)
 }
 
-userSchema.methods.generateAccessToken = () => {
+userSchema.methods.generateAccessToken = function() {
     return jwt.sign({
         _id: this._id,
         name: this.name,
@@ -56,7 +57,7 @@ userSchema.methods.generateAccessToken = () => {
     )
 }
 
-userSchema.methods.generateRefreshToken = () => {
+userSchema.methods.generateRefreshToken = function() {
     return jwt.sign({
         _id: this._id,
     }, process.env.REFRESH_TOKEN_SECRET,

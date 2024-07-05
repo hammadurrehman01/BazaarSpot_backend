@@ -97,11 +97,10 @@ const loginUser = asyncHandler(async (req, res) => {
                 "User logged in successfully"
             )
         )
-
 })
 
 const logoutUser = asyncHandler(async (req, res) => {
-    // console.log("id ====>", req.);
+    console.log("user =====>", req.user);
     await User.findByIdAndUpdate(req.user._id, {
         $set: { refreshToken: undefined }
     },
@@ -109,11 +108,9 @@ const logoutUser = asyncHandler(async (req, res) => {
     )
 
     return res.status(200)
-    .clearCookie("accessToken", options)
-    .clearCookie("refreshToken", options)
-    .json(new ApiResponse(200, {}, "User logout successfully"))
-
-
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(new ApiResponse(200, {}, "User logout successfully"))
 })
 
 

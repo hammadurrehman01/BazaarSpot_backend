@@ -32,7 +32,6 @@ const userSchema = new Schema({
     { timestamps: true }
 )
 
-
 userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) return next()
 
@@ -44,25 +43,15 @@ userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcyrpt.compare(password, this.password)
 }
 
-userSchema.methods.generateAccessToken = function() {
+userSchema.methods.generateToken = function () {
     return jwt.sign({
         _id: this._id,
         name: this.name,
         email: this.email,
         phone: this.phone,
-    }, process.env.ACCESS_TOKEN_SECRET,
+    }, process.env.JWT_SECRET_KEY,
         {
-            expiresIn: process.env.ACCESS_TOKEN_EXPIRY
-        }
-    )
-}
-
-userSchema.methods.generateRefreshToken = function() {
-    return jwt.sign({
-        _id: this._id,
-    }, process.env.REFRESH_TOKEN_SECRET,
-        {
-            expiresIn: process.env.REFRESH_TOKEN_EXPIRY
+            expiresIn: process.env.JWT_EXPIRY
         }
     )
 }

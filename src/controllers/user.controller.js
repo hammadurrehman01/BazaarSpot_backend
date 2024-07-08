@@ -42,17 +42,16 @@ const registerUser = asyncHandler(async (req, res) => {
     )
 });
 
-const generateAccessAndRefreshTokens = async (userId) => {
-    console.log("userId", userId);
+const addToken = async (userId) => {
+
     try {
         const user = await User.findById(userId);
-        const accessToken = user.generateAccessToken();
-        const refreshToken = user.generateRefreshToken();
+        const token = user.generateToken();
 
-        user.refreshToken = refreshToken;
+        user.token = token;
         user.save({ validateBeforeSave: false });
 
-        return { accessToken, refreshToken }
+        return { token }
 
     } catch (error) {
         throw new ApiError(500, "Something went wrong while generating refresh and access token")
@@ -80,19 +79,18 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Password is not correct")
     }
 
-    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
+    // const { accessToken } = await generateAccessAndRefreshTokens(user._id);
+    const { token } = await addToken(user._id);
 
-    const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
+    const loggedInUser = await User.findById(user._id).select("-password -token");
 
     return res
         .status(200)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", refreshToken, options)
+        .cookie("token", token, options)
         .json(
             new ApiResponse(200, {
                 user: loggedInUser,
-                accessToken,
-                refreshToken
+                token,
             },
                 "User logged in successfully"
             )
@@ -108,11 +106,57 @@ const logoutUser = asyncHandler(async (req, res) => {
     )
 
     return res.status(200)
-        .clearCookie("accessToken", options)
-        .clearCookie("refreshToken", options)
+        .clearCookie("token", options)
         .json(new ApiResponse(200, {}, "User logout successfully"))
+})
+
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+    const { oldPassword, newPassword, confirmNewPassword } = req.body;
+
+    if (!oldPassword && !newPassword && !confirmNewPassword) {
+        throw new ApiError(404, "All fields are required")
+    }
+
+    console.log("user ==>", req.user);
+
+    const user = await User.findById(req.user._conditions._id);
+
+    // console.log("user ==>", user);
+
+    if (!user) {
+        throw new ApiError(400, "User not found")
+    }
+
+    const correctpassword = await user.isPasswordCorrect(oldPassword);
+
+    if (!correctpassword) {
+        throw new ApiError(404, "password is not correct");
+    }
+
+    if (newPassword !== confirmNewPassword) {
+        throw new ApiError(404, "Passwords are not matched")
+
+    }
+
+    user.password = newPassword;
+
+    await user.save({ validateBeforeSave: true });
+
+    return res.status(200)
+        .json(
+            new ApiResponse(200, {}, "Password has been changed successfully!")
+        )
+})
+
+const getCurrentUser = asyncHandler(async(req, res) => {
+    return res.status(200)
+    .json(new ApiResponse(
+        200,
+        req.user,
+        "Current User is fetched successfully"
+    ))
 })
 
 
 
-export { registerUser, loginUser, logoutUser }
+export { registerUser, loginUser, logoutUser, changeCurrentPassword, getCurrentUser }

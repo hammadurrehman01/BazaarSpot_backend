@@ -12,7 +12,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
     const { name, email, phone, password } = req.body;
 
-    if (name == "" && email == "" && phone == "" && password == "") {
+    if (name == "" && (email == "" || phone == "") && password == "") {
         throw new ApiError(400, "All fields are required!")
     }
 
@@ -148,13 +148,13 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
         )
 })
 
-const getCurrentUser = asyncHandler(async(req, res) => {
+const getCurrentUser = asyncHandler(async (req, res) => {
     return res.status(200)
-    .json(new ApiResponse(
-        200,
-        req.user,
-        "Current User is fetched successfully"
-    ))
+        .json(new ApiResponse(
+            200,
+            req.user,
+            "Current User is fetched successfully"
+        ))
 })
 
 

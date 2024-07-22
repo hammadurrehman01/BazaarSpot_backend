@@ -22,6 +22,6 @@ app.use(express.static("public"))
 
 app.use(cookieParser())
 
-app.use("/api/v1/users", userRoute);
+app.use("/api/user", userRoute);
 
 export default app

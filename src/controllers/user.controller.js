@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { User } from "../models/user.model.js";
+import bcyrpt from "bcrypt";
 
 const options = {
     httpOnly: true,
@@ -16,18 +17,26 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All fields are required!")
     }
 
-    const existedUser = await User.findOne({
-        $or: [{ phone }, { email }]
-    })
-
-    if (existedUser) {
-        throw new ApiError(409, "User with phone or email already exists")
+    if (email) {
+        const existedUserWithEmail = await User.findOne({ email });
+        if (existedUserWithEmail) {
+            throw new ApiError(409, "User with this email already exists");
+        }
     }
+
+    // Check for existing user by phone only if phone is provided
+    if (phone) {
+        const existedUserWithPhone = await User.findOne({ phone });
+        if (existedUserWithPhone) {
+            throw new ApiError(409, "User with this phone already exists");
+        }
+    }
+
 
     const userDetails = await User.create({
         name,
-        email,
-        phone,
+        email: email || undefined,
+        phone: phone || undefined,
         password,
     });
 
@@ -61,19 +70,29 @@ const addToken = async (userId) => {
 const loginUser = asyncHandler(async (req, res) => {
     const { email, phone, password } = req.body;
 
-    if (password == "" && (email == "" || phone == "")) {
-        throw new ApiError(400, "All fields are required!")
+    if (!((phone || email) && password)) {
+        throw new ApiError(400, "username or password must required")
+    }
+    let user;
+    if (email) {
+        const existedUserWithEmail = await User.findOne({ email });
+        if (existedUserWithEmail) {
+            user = existedUserWithEmail
+        }
     }
 
-    const user = await User.findOne({
-        $or: [{ phone }, { email }]
-    })
+    if (phone) {
+        const existedUserWithPhone = await User.findOne({ phone });
+        if (existedUserWithPhone) {
+            user = existedUserWithPhone
+        }
+    }
 
     if (!user) {
         throw new ApiError(404, "User with this email or username is not exist")
     }
 
-    const isPasswordValid = await user.isPasswordCorrect(password);
+    const isPasswordValid = await user?.isPasswordCorrect(password, user.password)
 
     if (!isPasswordValid) {
         throw new ApiError(401, "Password is not correct")
@@ -81,12 +100,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const { token } = await addToken(user._id);
 
-
-    console.log(user.password);
-
     const loggedInUser = await User.findById(user._id).select("-password -token");
-
-
 
     return res
         .status(200)
@@ -114,18 +128,9 @@ const logoutUser = asyncHandler(async (req, res) => {
 })
 
 const getCurrentUser = asyncHandler(async (req, res) => {
-    const token = req.cookies.token;
-    req.user;
+    const id = req.user._conditions._id
 
-    if (!token) {
-        return res.status(401)
-            .json(new ApiResponse(
-                401,
-                "Unauthorized request"
-            ))
-    }
-
-    const user = await User.findOne({ token })
+    const user = await User.findOne({ _id: id }).select("-password -createdAt -updatedAt")
 
     if (!user) {
         return res.status(404)
@@ -138,8 +143,8 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     return res.status(200)
         .json(new ApiResponse(
             200,
-            req.user,
-            "Current User is fetched successfully"
+            "Current User is fetched successfully",
+            user,
         ))
 })
 
@@ -182,14 +187,29 @@ const forgotPassword = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All fields are required")
     }
 
-    const user = await User.findOne({ $or: [{ email }, { phone }] });
+    let user;
+    if (email) {
+        const existedUserWithEmail = await User.findOne({ email }).select("-password -createdAt -updatedAt");
+
+        if (existedUserWithEmail) {
+            user = existedUserWithEmail
+        }
+    }
+
+    if (phone) {
+        const existedUserWithPhone = await User.findOne({ phone }).select("-password -createdAt -updatedAt");
+
+        if (existedUserWithPhone) {
+            user = existedUserWithPhone
+        }
+    }
 
     if (!user) {
         throw new ApiError(400, "User not found")
     }
 
     return res.status(200)
-        .json(new ApiResponse(200, user, "User has been fetched"))
+        .json(new ApiResponse(200, "User has been fetched", user))
 })
 
 const resetPassword = asyncHandler(async (req, res) => {
@@ -219,17 +239,13 @@ const resetPassword = asyncHandler(async (req, res) => {
 
     user.password = newPassword;
 
-    
+
     await user.save({ validateBeforeSave: true });
-    
-    console.log(user.password);
+
     return res.status(200)
         .json(
             new ApiResponse(200, {}, "Password has been changed successfully!")
         )
 })
-
-
-
 
 export { registerUser, loginUser, logoutUser, getCurrentUser, getAllUsers, updateUserDetails, forgotPassword, resetPassword }

@@ -104,7 +104,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
         const { token } = await addToken(user._id);
 
-        const loggedInUser = await User.findById(user._id).select("-password -token");
+        const loggedInUser = await User.findById(user._id).select("-password -token -createdAt -updatedAt -name");
 
         return res
             .status(200)

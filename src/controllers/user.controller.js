@@ -168,19 +168,26 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 
 const updateUserDetails = asyncHandler(async (req, res) => {
     try {
-        const { name, email, phone } = req.body;
+        // const { name, email, phone } = req.body;
+        const { name } = req.body;
         const id = req.user._conditions._id
 
-        if (!name && !email && !phone) {
+        // if (!name) (!name && !email && !phone){
+        //     throw new ApiError(400, "All fields are required")
+        // }
+        if (!name) {
             throw new ApiError(400, "All fields are required")
         }
 
         const updatedUser = await User.findByIdAndUpdate(id, {
             $set: {
                 name,
-                email,
-                phone,
             }
+            // $set: {
+            //     name,
+            //     email,
+            //     phone,
+            // }
         },
             { new: true }
         ).select("-password")
@@ -197,32 +204,37 @@ const updateUserDetails = asyncHandler(async (req, res) => {
 const forgotPassword = asyncHandler(async (req, res) => {
     try {
 
-        const { email, phone } = req.body;
-
-        if (!email && !phone) {
-            throw new ApiError(400, "All fields are required")
-        }
-
+        // const { email,phone } = req.body;
+        const { email } = req.body;
+        console.log("email-->",email);
+        // if (email || phone) {
+        //     throw new ApiError(400, "All fields are required")
+        // }
+        // if (!email) {
+        //     throw new ApiError(400, "All fields are required")
+        // }
         let user;
         if (email) {
             const existedUserWithEmail = await User.findOne({ email }).select("-password -createdAt -updatedAt");
-
+            console.log('existedUserWithEmail-->',existedUserWithEmail);
             if (existedUserWithEmail) {
                 user = existedUserWithEmail
             }
         }
+        console.log("user-->",user);
 
-        if (phone) {
-            const existedUserWithPhone = await User.findOne({ phone }).select("-password -createdAt -updatedAt");
+        // if (phone) {
+        //     const existedUserWithPhone = await User.findOne({ phone }).select("-password -createdAt -updatedAt");
 
-            if (existedUserWithPhone) {
-                user = existedUserWithPhone
-            }
-        }
+        //     if (existedUserWithPhone) {
+        //         user = existedUserWithPhone
+        //     }
+        // }
 
         if (!user) {
             throw new ApiError(400, "User not found")
         }
+        console.log("user-->",user);
 
         return res.status(200)
             .json(new ApiResponse(200, "User has been fetched", user))
@@ -235,8 +247,10 @@ const forgotPassword = asyncHandler(async (req, res) => {
 const resetPassword = asyncHandler(async (req, res) => {
     try {
 
-        const { oldPassword, newPassword, confirmNewPassword } = req.body;
-        const id = req.user._conditions._id
+        const { oldPassword, newPassword, confirmNewPassword,_id } = req.body;
+        // const id = req.user._conditions._id;
+        // const id = req;
+        console.log('id-->',_id);
 
         if (!oldPassword && !newPassword && !confirmNewPassword) {
             throw new ApiError(404, "All fields are required")
@@ -246,8 +260,9 @@ const resetPassword = asyncHandler(async (req, res) => {
             throw new ApiError(404, "Passwords are not matched")
 
         }
-
-        const user = await User.findById(id);
+        // console.log("User Upper--->",User.call());
+        const user = await User.findById(_id);
+        console.log('user-->',user);
 
         if (!user) {
             throw new ApiError(400, "User not found")
@@ -256,7 +271,7 @@ const resetPassword = asyncHandler(async (req, res) => {
         const correctpassword = await user.isPasswordCorrect(oldPassword);
 
         if (!correctpassword) {
-            throw new ApiError(404, "password is not correct");
+            throw new ApiError(404, "Old Password is not correct");
         }
 
         user.password = newPassword;
@@ -274,4 +289,36 @@ const resetPassword = asyncHandler(async (req, res) => {
     }
 })
 
-export { registerUser, loginUser, logoutUser, getCurrentUser, updateUserDetails, forgotPassword, resetPassword }
+const forgettenResetPassword = asyncHandler(async (req, res) => {
+    try {
+        const { password, confirmPassword,userId } = req.body;
+        // const { userId } = req.params;
+        console.log('userId-->',userId);
+
+        if (!password && !confirmPassword) {
+            throw new ApiError(400, "All fields are required");
+        }
+
+        if (password !== confirmPassword) {
+            throw new ApiError(400, "Passwords do not match");
+        }
+
+        const user = await User.findById(userId);  
+        console.log("user-->",user);  
+
+        if (!user) {
+            throw new ApiError(404, "User not found");
+        }
+
+        user.password = password;
+        await user.save({ validateBeforeSave: true });
+
+        return res.status(200).json(
+            new ApiResponse(200, {}, "Password has been changed successfully!")
+        );
+    } catch (error) {
+        throw new ApiError(500, error.message || "Something went wrong");
+    }
+});
+
+export { registerUser, loginUser, logoutUser, getCurrentUser, updateUserDetails, forgotPassword, resetPassword,forgettenResetPassword }

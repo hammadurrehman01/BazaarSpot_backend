@@ -1,5 +1,5 @@
 import Router from "express";
-import { forgotPassword, getCurrentUser, loginUser, logoutUser, registerUser, resetPassword, updateUserDetails } from "../controllers/user.controller.js";
+import { forgettenResetPassword, forgotPassword, getCurrentUser, loginUser, logoutUser, registerUser, resetPassword, updateUserDetails } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const userRouter = Router();
@@ -11,5 +11,7 @@ userRouter.route("/current-user").get(verifyJWT, getCurrentUser);
 userRouter.route("/update-user").put(verifyJWT, updateUserDetails);
 userRouter.route("/forgot-password").post(forgotPassword);
 userRouter.route("/reset-password").post(resetPassword);
+userRouter.route("/forgetten-reset-password").put(forgettenResetPassword);
+
 
 export default userRouter;

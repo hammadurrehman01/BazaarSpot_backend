@@ -201,46 +201,38 @@ const updateUserDetails = asyncHandler(async (req, res) => {
     }
 })
 
+
+// Forgot password handle to check user with provided email or phone to authenticate user
 const forgotPassword = asyncHandler(async (req, res) => {
     try {
+        const { email, phone } = req.body;
 
-        // const { email,phone } = req.body;
-        const { email } = req.body;
-        console.log("email-->",email);
-        // if (email || phone) {
-        //     throw new ApiError(400, "All fields are required")
-        // }
-        // if (!email) {
-        //     throw new ApiError(400, "All fields are required")
-        // }
+        // Ensure at least one of email or phone is provided
+        if (!email && !phone) {
+            throw new ApiError(400, "Either email or phone number is required");
+        }
+
         let user;
+
+        // Search by email if provided
         if (email) {
-            const existedUserWithEmail = await User.findOne({ email }).select("-password -createdAt -updatedAt");
-            console.log('existedUserWithEmail-->',existedUserWithEmail);
-            if (existedUserWithEmail) {
-                user = existedUserWithEmail
-            }
+            user = await User.findOne({ email }).select("-password -createdAt -updatedAt");
         }
-        console.log("user-->",user);
 
-        // if (phone) {
-        //     const existedUserWithPhone = await User.findOne({ phone }).select("-password -createdAt -updatedAt");
+        // If user not found by email, search by phone
+        if (!user && phone) {
+            user = await User.findOne({ phone }).select("-password -createdAt -updatedAt");
+        }
 
-        //     if (existedUserWithPhone) {
-        //         user = existedUserWithPhone
-        //     }
-        // }
-
+        // If no user is found by either method
         if (!user) {
-            throw new ApiError(400, "User not found")
+            throw new ApiError(404, "User not found with the provided email or phone number");
         }
-        console.log("user-->",user);
 
-        return res.status(200)
-            .json(new ApiResponse(200, "User has been fetched", user))
+        // If user is found, return success
+        return res.status(200).json(new ApiResponse(200, "User has been fetched", user));
     } catch (error) {
-        throw new ApiError(500, error?.message || "Something went wrong")
-
+        return res.status(500).json(new ApiError(500, error?.message || "Something went wrong"));
     }
 })
 

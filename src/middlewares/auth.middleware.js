@@ -25,4 +25,4 @@ export const verifyJWT = asyncHandler(async (req, _, next) => {
     } catch (error) {
         throw new ApiError(401, error?.message, "Something went wrong while accessing the token")
     }
-}) 
+})

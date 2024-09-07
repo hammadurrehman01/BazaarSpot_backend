@@ -10,6 +10,6 @@ userRouter.route("/logout").post(verifyJWT, logoutUser);
 userRouter.route("/current-user").get(verifyJWT, getCurrentUser);
 userRouter.route("/update-user").put(verifyJWT, updateUserDetails);
 userRouter.route("/forgot-password").post(forgotPassword);
-userRouter.route("/reset-password").post(resetPassword);
+userRouter.route("/reset-password").post(verifyJWT, resetPassword);
 
 export default userRouter;

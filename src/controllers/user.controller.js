@@ -10,6 +10,7 @@ const options = {
 }
 
 const registerUser = asyncHandler(async (req, res) => {
+    
     try {
         const { name, email, phone, password } = req.body;
 
@@ -20,8 +21,13 @@ const registerUser = asyncHandler(async (req, res) => {
         if (email) {
             const existedUserWithEmail = await User.findOne({ email });
             if (existedUserWithEmail) {
-                throw new ApiError(409, "User with this email already exists");
+                // throw new ApiError(409, "User with this email already exists");
+                return res.status(400).json({
+                    isError: true,
+                    message: "User with this email already exists"
+                })
             }
+            return
         }
 
         if (phone) {
@@ -235,14 +241,16 @@ const forgotPassword = asyncHandler(async (req, res) => {
 const resetPassword = asyncHandler(async (req, res) => {
     try {
 
-        const { oldPassword, newPassword, confirmNewPassword } = req.body;
+        const { password, confirmPassword } = req.body;
+        
         const id = req.user._conditions._id
 
-        if (!oldPassword && !newPassword && !confirmNewPassword) {
+
+        if (!password && !confirmPassword) {
             throw new ApiError(404, "All fields are required")
         }
 
-        if (newPassword !== confirmNewPassword) {
+        if (password !== confirmPassword) {
             throw new ApiError(404, "Passwords are not matched")
 
         }
@@ -253,14 +261,7 @@ const resetPassword = asyncHandler(async (req, res) => {
             throw new ApiError(400, "User not found")
         }
 
-        const correctpassword = await user.isPasswordCorrect(oldPassword);
-
-        if (!correctpassword) {
-            throw new ApiError(404, "password is not correct");
-        }
-
-        user.password = newPassword;
-
+        user.password = password;
 
         await user.save({ validateBeforeSave: true });
 

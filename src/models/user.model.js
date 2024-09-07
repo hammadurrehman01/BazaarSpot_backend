@@ -10,7 +10,6 @@ const userSchema = new Schema({
     },
     email: {
         type: String,
-        // required: true,
         unique: true,
         trim: true,
         lowercase: true,
@@ -18,7 +17,6 @@ const userSchema = new Schema({
     },
     phone: {
         type: Number,
-        // required: true,
         unique: true,
         trim: true,
         sparse: true

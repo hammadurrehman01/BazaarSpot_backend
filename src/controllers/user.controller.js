@@ -10,9 +10,10 @@ const options = {
 }
 
 const registerUser = asyncHandler(async (req, res) => {
-    
+
     try {
         const { name, email, phone, password } = req.body;
+
 
         if (name == "" && (email == "" || phone == "") && password == "") {
             throw new ApiError(400, "All fields are required!")
@@ -49,9 +50,22 @@ const registerUser = asyncHandler(async (req, res) => {
             throw new ApiError(500, "Something went wrong while registering a user")
         }
 
-        return res.status(201).send(
-            new ApiResponse(200, "User registered successfully", createdUser)
-        )
+        const { token } = await addToken(createdUser._id);
+
+        return res
+            .status(201)
+            .cookie("token", token, options)
+            .json(
+                new ApiResponse(200, {
+                    createdUser,
+                    token,
+                },
+                    "User registered successfully"
+                )
+            )
+
+
+
     } catch (error) {
         throw new ApiError(500, error?.message || "Something went wrong")
 
@@ -107,17 +121,13 @@ const loginUser = asyncHandler(async (req, res) => {
             throw new ApiError(401, "Password is not correct")
         }
 
-        const { token } = await addToken(user._id);
-
-        const loggedInUser = await User.findById(user._id).select("-password -token -createdAt -updatedAt -name");
+        const loggedInUser = await User.findById(user._id).select("-password -createdAt -updatedAt -name");
 
         return res
             .status(200)
-            .cookie("token", token, options)
             .json(
                 new ApiResponse(200, {
                     user: loggedInUser,
-                    token,
                 },
                     "User logged in successfully"
                 )
@@ -241,7 +251,7 @@ const resetPassword = asyncHandler(async (req, res) => {
     try {
 
         const { password, confirmPassword } = req.body;
-        
+
         const id = req.user._conditions._id
 
 
@@ -276,9 +286,9 @@ const resetPassword = asyncHandler(async (req, res) => {
 
 const forgettenResetPassword = asyncHandler(async (req, res) => {
     try {
-        const { password, confirmPassword,userId } = req.body;
+        const { password, confirmPassword, userId } = req.body;
         // const { userId } = req.params;
-        console.log('userId-->',userId);
+        console.log('userId-->', userId);
 
         if (!password && !confirmPassword) {
             throw new ApiError(400, "All fields are required");
@@ -288,8 +298,8 @@ const forgettenResetPassword = asyncHandler(async (req, res) => {
             throw new ApiError(400, "Passwords do not match");
         }
 
-        const user = await User.findById(userId);  
-        console.log("user-->",user);  
+        const user = await User.findById(userId);
+        console.log("user-->", user);
 
         if (!user) {
             throw new ApiError(404, "User not found");
@@ -306,4 +316,4 @@ const forgettenResetPassword = asyncHandler(async (req, res) => {
     }
 });
 
-export { registerUser, loginUser, logoutUser, getCurrentUser, updateUserDetails, forgotPassword, resetPassword,forgettenResetPassword }
+export { registerUser, loginUser, logoutUser, getCurrentUser, updateUserDetails, forgotPassword, resetPassword, forgettenResetPassword }

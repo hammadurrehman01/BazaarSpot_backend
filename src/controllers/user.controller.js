@@ -27,7 +27,6 @@ const registerUser = asyncHandler(async (req, res) => {
                     message: "User with this email already exists"
                 })
             }
-            return
         }
 
         if (phone) {
@@ -189,11 +188,7 @@ const updateUserDetails = asyncHandler(async (req, res) => {
             $set: {
                 name,
             }
-            // $set: {
-            //     name,
-            //     email,
-            //     phone,
-            // }
+        
         },
             { new: true }
         ).select("-password")
@@ -238,7 +233,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
         // If user is found, return success
         return res.status(200).json(new ApiResponse(200, "User has been fetched", user));
     } catch (error) {
-        return res.status(500).json(new ApiError(500, error?.message || "Something went wrong"));
+        return res.status(500).json(new ApiError(500, "Something went wrong"));
     }
 })
 
@@ -258,22 +253,14 @@ const resetPassword = asyncHandler(async (req, res) => {
             throw new ApiError(404, "Passwords are not matched")
 
         }
-        // console.log("User Upper--->",User.call());
-        const user = await User.findById(_id);
-        console.log('user-->',user);
+        const user = await User.findById(id);
 
         if (!user) {
             throw new ApiError(400, "User not found")
         }
 
-        const correctpassword = await user.isPasswordCorrect(oldPassword);
 
-        if (!correctpassword) {
-            throw new ApiError(404, "Old Password is not correct");
-        }
-
-        user.password = newPassword;
-
+        user.password = password;
 
         await user.save({ validateBeforeSave: true });
 
